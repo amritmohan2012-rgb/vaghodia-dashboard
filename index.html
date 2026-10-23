@@ -721,7 +721,7 @@ tfoot td{font-weight:500;background:var(--cream)}
 .mc h5{margin:0;font-size:16px;font-weight:500}.mc .rl{color:var(--ink3);font-size:12px;margin-bottom:8px}
 .mc .row{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.mc .row div{font-size:11px;color:var(--ink3);text-transform:uppercase}.mc .row b{display:block;font-size:16px;color:var(--ink);font-weight:500;text-transform:none}
 .btn{font:inherit;font-size:12px;border:1px solid var(--amber);background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;color:var(--ink)}
-.xbtn{font:inherit;font-size:12px;border:1px solid var(--amber);background:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;color:var(--ink);align-self:flex-end}.xbtn:hover{background:var(--peach)}.tbhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 6px}.tbhead h3{margin:0}.btn:hover{background:var(--peach)}
+.smhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}.smctl{display:flex;gap:10px;flex-wrap:wrap}.xbtn{font:inherit;font-size:12px;border:1px solid var(--amber);background:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;color:var(--ink);align-self:flex-end}.xbtn:hover{background:var(--peach)}.tbhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 6px}.tbhead h3{margin:0}.btn:hover{background:var(--peach)}
 .map{height:460px;border:1px solid var(--line);border-radius:8px;z-index:1}
 .cal{border-collapse:separate;border-spacing:3px;width:auto}
 .cal th{position:static;cursor:default;background:none;border:0;padding:2px;font-size:11px;text-align:center;color:var(--ink3)}
@@ -860,16 +860,35 @@ function tabBiz(){const A=bizAgg(),T=OV(A.tot),net=netCount(B),ordering=[...A.rw
  $('#fb').onclick=()=>$('#bf').classList.toggle('closed');onPills('b-tabs',v=>{B.tab=v;tabBiz()});
  ({ov:bizOv,mat:bizMat,rwe:bizRwe,vil:bizVil,pro:bizPro,map:bizMap})[B.tab](A,$('#b-body'))}
 const statusCols=[{k:'ord',h:'Ordered',num:1,f:r=>inr(OV(r.v)),v:r=>OV(r.v)},{k:'d',h:'Delivered',num:1,f:r=>inr(r.v[0]),v:r=>r.v[0]},{k:'p',h:'To be delivered',num:1,f:r=>inr(r.v[1]),v:r=>r.v[1]},{k:'h',h:'Hold',num:1,f:r=>inr(r.v[2]),v:r=>r.v[2]},{k:'r',h:'Rejected (not in ordered)',num:1,f:r=>inr(r.v[3]),v:r=>r.v[3]}];
+const SM={g:'month',m:'val'},SMC=['#E8B04F','#8B6A1F','#8C8C8C','#B5524F'];
+function smDraw(A){const host=$('#o-mon');if(!host)return;const g=SM.g,key=l=>g==='month'?l.m:g==='week'?Math.floor((l.d+2)/7):l.d;
+ const mp=new Map();A.lines.forEach(l=>{const k=key(l);let z=mp.get(k);if(!z){z={v:[0,0,0,0],o:[new Set(),new Set(),new Set(),new Set()],r:new Set()};mp.set(k,z)}z.v[l.b]+=l.v;z.o[l.b].add(l.o);if(l.b!==3)z.r.add(l.p)});
+ const keys=[...mp.keys()].sort((a,b)=>b-a);
+ if(!keys.length){host.innerHTML='<p class="note">No orders in this view.</p>';return}
+ const lab=k=>g==='month'?ML(k):g==='week'?fd(dstr(Math.max(0,k*7-2))):fd(dstr(k));
+ const sub=g==='day'?k=>dow(dstr(k)):null;
+ const nr=v=>Math.round(v).toLocaleString('en-IN'),fmt=SM.m==='val'?v=>inr(v).replace(' ',''):nr,fax=SM.m==='val'?inr:nr;
+ const ser=SM.m==='rwe'?[{name:'Active RWEs',color:SMC[0],values:keys.map(k=>mp.get(k).r.size)}]:BN.map((n,b)=>({name:n,color:SMC[b],values:keys.map(k=>SM.m==='val'?mp.get(k).v[b]:mp.get(k).o[b].size)}));
+ const slot=g==='month'?72:g==='week'?58:34,H=300,pl=62,pr=10,pt=26,pb=g==='day'?50:34,ih=H-pt-pb,W=Math.max((host.clientWidth||320),pl+pr+keys.length*slot),cw=(W-pl-pr)/keys.length,bw=Math.min(66,cw*.72);
+ const tot=keys.map((k,i)=>ser.reduce((a,s)=>a+s.values[i],0)),mx0=Math.max(1,...tot);
+ const step0=mx0/4,p10=Math.pow(10,Math.floor(Math.log10(step0))),stp=[1,2,2.5,5,10].map(m=>m*p10).find(x=>x>=step0),mx=stp*Math.ceil(mx0/stp);
+ let o=`<svg width="${W}" height="${H}" font-family="Roboto,Arial" font-size="11" role="img" aria-label="Sales movement chart">`;
+ for(let t=0;t<=mx+1e-9;t+=stp){const y=pt+ih-t/mx*ih;o+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="#E7DED3"/><text x="${pl-6}" y="${y+4}" text-anchor="end" fill="#8A8178" font-size="10">${t?fax(t):(SM.m==='val'?'₹0':'0')}</text>`}
+ keys.forEach((k,i)=>{const x=pl+i*cw+(cw-bw)/2;let y=pt+ih;ser.forEach(s=>{const v=s.values[i],h=v/mx*ih;if(h>0){y-=h;o+=`<rect x="${x}" y="${y}" width="${bw}" height="${h}" fill="${s.color}"><title>${esc(lab(k))} · ${esc(s.name)}: ${SM.m==='val'?inr(v):nr(v)}</title></rect>`;if(h>=15&&cw>=56&&ser.length>1)o+=`<text x="${x+bw/2}" y="${y+h/2+3.5}" text-anchor="middle" fill="${s===ser[0]?'#3A2E12':'#fff'}" font-size="9.5">${fmt(v).replace('₹','₹')}</text>`}});
+  if(tot[i]){const tt=fmt(tot[i]);if(cw>=40||i%2===0)o+=`<text x="${x+bw/2}" y="${y-5}" text-anchor="middle" fill="#434343" font-weight="500" font-size="${cw<50?9:11}">${tt}</text>`}
+  o+=`<text x="${x+bw/2}" y="${pt+ih+16}" text-anchor="middle" fill="#666" font-size="${g==='day'?9.5:11}">${esc(lab(k))}</text>`;if(sub)o+=`<text x="${x+bw/2}" y="${pt+ih+29}" text-anchor="middle" fill="#9a9087" font-size="9">${sub(k)}</text>`});
+ o+=`<line x1="${pl}" x2="${W-pr}" y1="${pt+ih}" y2="${pt+ih}" stroke="#CFC4B7"/></svg>`;
+ host.innerHTML=`<div style="overflow-x:auto">${o}</div>`+(ser.length>1?`<div class="leg">${ser.map(x=>`<span><i class="sw" style="background:${x.color}"></i>${x.name}</span>`).join('')}</div>`:'')+(SM.m==='rwe'?'<p class="note">Active RWEs = RWEs with at least one non-rejected order in the period.</p>':'')}
 function bizOv(A,el){
  const mm=[...A.mon.keys()].sort((a,b)=>a-b);
  const mat3=[0,1,2,3].map(k=>{const z=A.mat.get(k)||{v:[0,0,0,0],o:new Set(),r:new Set()};const mapped=P.filter(p=>p.role==='RWE'&&mk(p)===k&&pOK(p,{...B,mat:'All'})).length;return {k,name:mname(k),v:z.v,o:z.o.size,r:[...z.r].filter(i=>P[i].role==='RWE').length,mapped}}).filter(r=>OV(r.v)||r.mapped);
  const ph=[1,2,0].map(k=>{const z=A.ph.get(k)||{v:[0,0,0,0],o:new Set()};const rw=P.filter(p=>p.role==='RWE'&&p.phase===k&&pOK(p,{...B,phase:'All'})),ss=P.filter(p=>p.role==='SS'&&p.phase===k&&(B.mat==='All'||String(p.vmat==null?3:p.vmat)===B.mat)&&(B.vil==='All'||p.vc===B.vil));return{name:k?'Phase '+k:'Not in Phase lists',v:z.v,o:z.o.size,reg:rw.length,ss:ss.length,ordering:rw.filter(p=>(A.rwe.get(PID.get(p.id))||{}).ok).length}}).filter(r=>r.reg||r.ss||OV(r.v));
- el.innerHTML=`<div class="blk"><h3>Monthly ordered value by delivery status</h3><div id="o-mon"></div></div>
+ el.innerHTML=`<div class="blk"><div class="smhead"><div><h3>Sales movement</h3><p class="note" style="margin:0">Orders placed in the selected period, split by delivery status.</p></div><div class="smctl">${pills('sm-g',[['month','Month'],['week','Week'],['day','Day']],SM.g)}${pills('sm-m',[['val','₹ Value'],['ord','Orders'],['rwe','Active RWEs']],SM.m)}</div></div><div id="o-mon" style="margin-top:8px"></div></div>
  <div class="blk"><h3>MAT-wise business</h3><div id="o-mat"></div></div>
  <div class="grid2"><div class="blk"><h3>Phase-wise business and coverage</h3><p class="note">Registered = RWEs in the Phase lists plus any RWE only in the route plan. Super Sahelis (SS) are counted from the SS lists and are assigned the MAT of their village.</p><div id="o-ph"></div></div>
  <div class="blk"><h3>Sales by RWE category</h3><div id="o-cat"></div></div></div>
  <div class="grid2"><div class="blk"><h3>Top 10 RWEs by ordered value</h3><div id="o-top"></div></div><div class="blk"><h3>Delivered value by MAT</h3><div id="o-mb"></div></div></div>`;
- cols($('#o-mon'),mm.map(m=>ML(m)),BN.slice(0,3).map((n,b)=>({name:n,color:BC[b],values:mm.map(m=>A.mon.get(m).v[b])})),{h:300});
+ onPills('sm-g',v=>{SM.g=v;$$('#sm-g .pill').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));smDraw(A)});onPills('sm-m',v=>{SM.m=v;$$('#sm-m .pill').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));smDraw(A)});smDraw(A);
  table($('#o-mat'),[{k:'name',h:'MAT',f:r=>`<b>${esc(r.name)}</b>`},{k:'mapped',h:'RWEs mapped',num:1,f:r=>r.k===3?'–':num(r.mapped)},{k:'r',h:'RWEs ordering',num:1,f:r=>r.k===3?num(r.r):num(r.r)+' ('+pct(r.r,r.mapped)+')',v:r=>r.r},...statusCols.map(c=>({...c,v:r=>c.v(r)})),{k:'o',h:'Orders',num:1,f:r=>num(r.o)}],mat3,{sort:'ord'});
  table($('#o-ph'),[{k:'name',h:'Phase',f:r=>`<b>${r.name}</b>`},{k:'reg',h:'RWEs',num:1},{k:'ordering',h:'Ordering',num:1,f:r=>num(r.ordering)+' ('+pct(r.ordering,r.reg)+')',v:r=>r.ordering},{k:'ss',h:'Super Sahelis',num:1},{k:'ord',h:'Ordered',num:1,f:r=>inr(OV(r.v)),v:r=>OV(r.v)},{k:'d',h:'Delivered',num:1,f:r=>inr(r.v[0]),v:r=>r.v[0]}],ph,{sort:'ord'});
  const cr=['A','B','C1','C2','Not set'].map(c=>{const z=A.cat.get(c)||{v:[0,0,0,0],r:new Set()};return{name:c,v:z.v,r:[...z.r].filter(i=>P[i].role==='RWE').length,tot:netCount({...B,cat:c}).length}});
